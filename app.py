@@ -44,6 +44,16 @@ def get_scoring_engine():
     return ScoringEngine()
 
 
+# Force refresh database if holdings were just added
+if 'refresh_db' not in st.session_state:
+    st.session_state.refresh_db = False
+
+if st.session_state.refresh_db:
+    get_database.clear()
+    get_scoring_engine.clear()
+    st.session_state.refresh_db = False
+
+
 def create_price_chart(chart_data, symbol):
     """Create interactive price chart with technical indicators"""
     fig = make_subplots(
@@ -251,7 +261,8 @@ def main():
                                 )
                                 st.success(f"✅ Added {quantity} shares of {symbol} at ${price:.2f}")
                                 st.balloons()
-                                get_database.clear()  # Clear cache to see new holding
+                                # Set flag to refresh database on next run
+                                st.session_state.refresh_db = True
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error adding holding: {e}")
@@ -418,7 +429,8 @@ def main():
                                     )
                                     st.success(f"✅ Added {quantity} shares of {selected_symbol} at ${analysis['current_price']:.2f}")
                                     st.balloons()
-                                    get_database.clear()  # Clear cache to see new holding
+                                    # Set flag to refresh database on next run
+                                    st.session_state.refresh_db = True
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error adding holding: {e}")
