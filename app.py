@@ -44,6 +44,11 @@ def get_scoring_engine():
     return ScoringEngine()
 
 
+def get_fresh_database():
+    """Get a fresh database instance for write operations"""
+    return StockDatabase()
+
+
 # Force refresh database if holdings were just added
 if 'refresh_db' not in st.session_state:
     st.session_state.refresh_db = False
@@ -253,18 +258,21 @@ def main():
                         quantity = st.number_input("Quantity", min_value=1, value=10, key=f"qty_{symbol}_{idx}")
                         if st.form_submit_button("Confirm"):
                             try:
-                                # Add holding
-                                db.add_holding(
+                                # Use a fresh database connection for write operation
+                                fresh_db = get_fresh_database()
+                                fresh_db.add_holding(
                                     symbol,
                                     datetime.now().strftime('%Y-%m-%d'),
                                     price,
                                     quantity
                                 )
 
-                                # Verify it was added
-                                holdings_after = db.get_active_holdings()
+                                # Verify it was added using another fresh connection
+                                verify_db = get_fresh_database()
+                                holdings_after = verify_db.get_active_holdings()
                                 if holdings_after.empty or symbol not in holdings_after['symbol'].values:
-                                    st.error(f"⚠️ Warning: Holding may not have been saved. Database path: {db.db_path}")
+                                    st.error(f"⚠️ Warning: Holding may not have been saved. Database path: {fresh_db.db_path}")
+                                    st.write(f"Holdings found: {len(holdings_after)}")
                                 else:
                                     st.success(f"✅ Added {quantity} shares of {symbol} at ${price:.2f}")
                                     st.balloons()
@@ -431,18 +439,21 @@ def main():
 
                             if submit_button:
                                 try:
-                                    # Add holding
-                                    db.add_holding(
+                                    # Use a fresh database connection for write operation
+                                    fresh_db = get_fresh_database()
+                                    fresh_db.add_holding(
                                         selected_symbol,
                                         datetime.now().strftime('%Y-%m-%d'),
                                         analysis['current_price'],
                                         quantity
                                     )
 
-                                    # Verify it was added
-                                    holdings_after = db.get_active_holdings()
+                                    # Verify it was added using another fresh connection
+                                    verify_db = get_fresh_database()
+                                    holdings_after = verify_db.get_active_holdings()
                                     if holdings_after.empty or selected_symbol not in holdings_after['symbol'].values:
-                                        st.error(f"⚠️ Warning: Holding may not have been saved. Database path: {db.db_path}")
+                                        st.error(f"⚠️ Warning: Holding may not have been saved. Database path: {fresh_db.db_path}")
+                                        st.write(f"Holdings found: {len(holdings_after)}")
                                     else:
                                         st.success(f"✅ Added {quantity} shares of {selected_symbol} at ${analysis['current_price']:.2f}")
                                         st.balloons()
