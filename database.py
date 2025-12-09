@@ -1,5 +1,7 @@
 import sqlite3
 import logging
+import os
+from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
 import pandas as pd
@@ -15,6 +17,8 @@ class StockDatabase:
 
     def __init__(self, db_path: str = config.DATABASE_PATH):
         self.db_path = db_path
+        # Create data directory if it doesn't exist
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self.engine = create_engine(f'sqlite:///{db_path}')
         self._create_tables()
 
