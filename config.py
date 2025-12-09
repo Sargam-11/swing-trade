@@ -3,8 +3,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# API Keys
-ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+# API Keys - Support both .env and Streamlit secrets
+try:
+    import streamlit as st
+    ALPHA_VANTAGE_API_KEY = st.secrets.get("api_keys", {}).get("ALPHA_VANTAGE_API_KEY") or os.getenv('ALPHA_VANTAGE_API_KEY')
+except (ImportError, FileNotFoundError):
+    ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 
 # Stock Universe (20 stocks to start)
 STOCK_UNIVERSE = [
