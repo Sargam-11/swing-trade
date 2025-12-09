@@ -275,8 +275,10 @@ class StockDatabase:
                 })
                 conn.commit()
                 logger.info(f"Added holding: {quantity} shares of {symbol} at ${purchase_price}")
+                return True
             except Exception as e:
                 logger.error(f"Error adding holding for {symbol}: {e}")
+                raise  # Re-raise the exception so caller knows it failed
 
     def get_active_holdings(self) -> pd.DataFrame:
         """Get all active holdings"""

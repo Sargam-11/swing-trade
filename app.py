@@ -253,19 +253,29 @@ def main():
                         quantity = st.number_input("Quantity", min_value=1, value=10, key=f"qty_{symbol}_{idx}")
                         if st.form_submit_button("Confirm"):
                             try:
+                                # Add holding
                                 db.add_holding(
                                     symbol,
                                     datetime.now().strftime('%Y-%m-%d'),
                                     price,
                                     quantity
                                 )
-                                st.success(f"✅ Added {quantity} shares of {symbol} at ${price:.2f}")
-                                st.balloons()
+
+                                # Verify it was added
+                                holdings_after = db.get_active_holdings()
+                                if holdings_after.empty or symbol not in holdings_after['symbol'].values:
+                                    st.error(f"⚠️ Warning: Holding may not have been saved. Database path: {db.db_path}")
+                                else:
+                                    st.success(f"✅ Added {quantity} shares of {symbol} at ${price:.2f}")
+                                    st.balloons()
+
                                 # Set flag to refresh database on next run
                                 st.session_state.refresh_db = True
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error adding holding: {e}")
+                                import traceback
+                                st.code(traceback.format_exc())
         else:
             st.info("No buy recommendations available. Run daily analysis to generate recommendations.")
 
@@ -421,19 +431,29 @@ def main():
 
                             if submit_button:
                                 try:
+                                    # Add holding
                                     db.add_holding(
                                         selected_symbol,
                                         datetime.now().strftime('%Y-%m-%d'),
                                         analysis['current_price'],
                                         quantity
                                     )
-                                    st.success(f"✅ Added {quantity} shares of {selected_symbol} at ${analysis['current_price']:.2f}")
-                                    st.balloons()
+
+                                    # Verify it was added
+                                    holdings_after = db.get_active_holdings()
+                                    if holdings_after.empty or selected_symbol not in holdings_after['symbol'].values:
+                                        st.error(f"⚠️ Warning: Holding may not have been saved. Database path: {db.db_path}")
+                                    else:
+                                        st.success(f"✅ Added {quantity} shares of {selected_symbol} at ${analysis['current_price']:.2f}")
+                                        st.balloons()
+
                                     # Set flag to refresh database on next run
                                     st.session_state.refresh_db = True
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error adding holding: {e}")
+                                    import traceback
+                                    st.code(traceback.format_exc())
 
                     else:
                         st.error(analysis['error'])
@@ -445,7 +465,20 @@ def main():
     with tab4:
         st.header("Portfolio Performance Overview")
 
+        # Warning about ephemeral storage in Streamlit Cloud
+        if 'STREAMLIT_SHARING_MODE' in st.secrets or '/mount/src/' in db.db_path:
+            st.warning("⚠️ **Note**: On Streamlit Cloud, the database resets on app restart. Holdings are temporary and will be lost when the app reboots.")
+
         holdings = db.get_active_holdings()
+
+        # Debug info
+        with st.expander("🔍 Debug Info"):
+            st.write(f"Database path: {db.db_path}")
+            st.write(f"Number of holdings: {len(holdings)}")
+            st.write(f"Session state refresh_db: {st.session_state.get('refresh_db', False)}")
+            if not holdings.empty:
+                st.write("Holdings data:")
+                st.dataframe(holdings)
 
         if not holdings.empty:
             total_value = 0
